@@ -9,6 +9,15 @@ import torch as th
 import os
 import gym_server
 
+
+from torch.autograd import Variable
+
+import torch.onnx
+import torchvision
+import torch
+import json
+
+
 # Env parameters
 
 # Server
@@ -73,6 +82,17 @@ vec_envs.close()
 # Save model
 model.save('mars_lander_model')
 model = PPO.load('mars_lander_model', device='cpu')
+
+dummy_input = vec_envs
+state_dict = torch.load('mars_lander_model')
+model.load_state_dict(state_dict)
+torch.onnx.export(model, dummy_input, "mars_lander_model.onnx")
+
+def predict_mlnet(obs):
+    obs_file =  open('obs.json','wt')
+    obs_file.write(json.dumps(obs))
+    obs_file.close()
+    os.system('dotnet my_ml_runner.dll')
 
 # Record one episode
 env = (make_env_fn(1))()
