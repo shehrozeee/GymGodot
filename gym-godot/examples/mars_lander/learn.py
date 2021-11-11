@@ -25,9 +25,10 @@ serverIP = '127.0.0.1'
 
 # Executable
 projectPath = os.getcwd()[:-20]  # project.godot folder
-godotPath = 'flatpak run org.godotengine.Godot'  # godot editor executable
+godotPath = 'replace the absoulute path to the exe'  # godot editor executable
 scenePath = './examples/mars_lander/Root.tscn'  # env Godot scene
-exeCmd = 'cd {} && {} {}'.format(projectPath, godotPath, scenePath)
+exeCmd = '{} {}'.format(godotPath, scenePath)
+
 
 # Action Space : Jet activation : Main, AuxX, AuxXn, AuxZ, AuxZn, None
 action_space = spaces.Discrete(6)
@@ -65,7 +66,8 @@ def make_env_fn(i, max_episode_steps=max_episode_steps):
 
 
 nb_envs = 4
-vec_envs = SubprocVecEnv([make_env_fn(i) for i in range(nb_envs)],
+if __name__ == '__main__':
+    vec_envs = SubprocVecEnv([make_env_fn(i) for i in range(nb_envs)],
                          start_method='fork')
 
 # Custom actor (pi) and value function (vf) networks
