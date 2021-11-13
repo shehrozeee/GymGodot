@@ -45,7 +45,7 @@ class ServerEnv(gym.Env):
         render_path_flag = ' --renderPath={}'.format(renderPath)
         flags = physic_delta_flag + render_loop_flag + server_ip_flag + server_port_flag + render_path_flag
         print('- starting Godot env with command : ' + exeCmd + flags)
-        subprocess.Popen([exeCmd + flags], shell=True)
+        subprocess.Popen(exeCmd + flags, shell=True)
 
     def _start_server(self):
         # Run server logic on process loop

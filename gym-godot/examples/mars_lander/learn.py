@@ -17,17 +17,25 @@ import torchvision
 import torch
 import json
 
+import onnx
+import onnxruntime as ort
 
 # Env parameters
 
 # Server
 serverIP = '127.0.0.1'
 
-# Executable
-projectPath = os.getcwd()[:-20]  # project.godot folder
-godotPath = 'replace the absoulute path to the exe'  # godot editor executable
+# # Executable
+# projectPath = os.getcwd()[:-20]  # project.godot folder
+# godotPath = 'flatpak run org.godotengine.Godot'  # godot editor executable
+# scenePath = './examples/mars_lander/Root.tscn'  # env Godot scene
+# exeCmd = 'cd {} && {} {}'.format(projectPath, godotPath, scenePath)
+
+
+projectPath = 'C:/Users/Shehroze/source/repos/GymGodot/gym-godot'  # project.godot folder
+godotPath = 'E:/godot/Godot/Godot_v3.4-stable_mono_win64.exe'  # godot editor executable
 scenePath = './examples/mars_lander/Root.tscn'  # env Godot scene
-exeCmd = '{} {}'.format(godotPath, scenePath)
+exeCmd = 'cd {} && {} {}'.format(projectPath, godotPath, scenePath)
 
 
 # Action Space : Jet activation : Main, AuxX, AuxXn, AuxZ, AuxZn, None
@@ -49,7 +57,7 @@ else:
         os.remove(file.path)
 
 # Max episode length
-max_episode_steps = 300
+max_episode_steps = 100
 
 # Create vectorized env
 def make_env_fn(i, max_episode_steps=max_episode_steps):
@@ -68,7 +76,7 @@ def make_env_fn(i, max_episode_steps=max_episode_steps):
 nb_envs = 4
 if __name__ == '__main__':
     vec_envs = SubprocVecEnv([make_env_fn(i) for i in range(nb_envs)],
-                         start_method='fork')
+                         start_method='spawn')
     
     # Custom actor (pi) and value function (vf) networks
     policy_kwargs = dict(activation_fn=th.nn.ReLU,
@@ -77,18 +85,25 @@ if __name__ == '__main__':
     # Train
     model = PPO('MlpPolicy', vec_envs, verbose=0,  learning_rate=0.002,
                 tensorboard_log='./tensorboard_logs/', policy_kwargs=policy_kwargs,
-                device='cpu', seed=0)
+                device='cuda', seed=0)
     model.learn(total_timesteps=3e6)
     vec_envs.close()
     
     # Save model
     model.save('mars_lander_model')
-    model = PPO.load('mars_lander_model', device='cpu')
+    model = PPO.load('mars_lander_model.zip', device='cuda')
     
-    dummy_input = vec_envs
-    state_dict = torch.load('mars_lander_model')
-    model.load_state_dict(state_dict)
-    torch.onnx.export(model, dummy_input, "mars_lander_model.onnx")
+    # onnx_path = "my_ppo_model.onnx"
+    # onnx_model = onnx.load(onnx_path)
+    # onnx.checker.check_model(onnx_model)
+
+    # observation = np.zeros((10)).astype(np.float32)
+    # ort_sess = ort.InferenceSession(onnx_path)
+    
+    # dummy_input = vec_envs
+    # state_dict = torch.load('mars_lander_model')
+    # model.load_state_dict(state_dict)
+    # torch.onnx.export(model, dummy_input, "mars_lander_model.onnx")
     
     def predict_mlnet(obs):
         obs_file =  open('obs.json','wt')
@@ -100,17 +115,28 @@ if __name__ == '__main__':
     env = (make_env_fn(1))()
     obs = env.reset()
     for i in range(max_episode_steps):
-        action, _states = model.predict(obs)
-        obs, rewards, done, info = env.step(action)
+        action1, _states = model.predict(obs)
+        # action, _states = ort_sess.run(None, {'input.1': obs})
+        
+        # action_to_take = 0
+        # for i_ in range(6):
+        #     if action[i_] ==  action.max():
+        #         action_to_take = i_
+        #         break;    
+        # if( i%2 == 0):
+        #     obs, rewards, done, info = env.step(action_to_take)
+        # else:
+        obs, rewards, done, info = env.step(action1)
+        #print((action1,action_to_take))
         env.render()
         if done:
             break
     env.close()
 
-# Create video from frames
-os.system('cd {} && ffmpeg -hide_banner -loglevel error -framerate 30 -y -i %01d.png -vcodec libvpx -b 2000k video.webm'.format(renderPath))
-
-# Remove frames
-for item in os.listdir(renderPath):
-    if item.endswith('.png'):
-        os.remove(os.path.join(renderPath, item))
+    # Create video from frames
+    #os.system('cd {} && ffmpeg -hide_banner -loglevel error -framerate 30 -y -i %01d.png -vcodec libvpx -b 2000k video.webm'.format(renderPath))
+    
+    # Remove frames
+    for item in os.listdir(renderPath):
+        if item.endswith('.png'):
+            os.remove(os.path.join(renderPath, item))
