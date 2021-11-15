@@ -20,7 +20,7 @@ model.policy.to("cpu")
 onnxable_model = OnnxablePolicy(model.policy.mlp_extractor, model.policy.action_net, model.policy.value_net)
 
 dummy_input = torch.randn(10)
-torch.onnx.export(onnxable_model, dummy_input, "my_ppo_model.onnx", opset_version=9)
+torch.onnx.export(onnxable_model, dummy_input, "my_ppo_1_model.onnx", opset_version=9)
 
 ##### Load and test with onnx
 

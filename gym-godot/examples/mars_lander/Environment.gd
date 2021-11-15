@@ -6,7 +6,7 @@ export(float) var tiltCostWeight = 1
 # Negative reward for crashing
 export(float) var crashCost = 100
 # Positive reward for landing the four lander legs
-export(float) var landedStepReward = 5
+export(float) var landedStepReward = 20
 
 # Consider crashed when outside of these absolute limits
 var max_height : int = 14

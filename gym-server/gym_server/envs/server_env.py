@@ -7,13 +7,18 @@ from multiprocessing import Pipe, Process
 from threading import Thread
 import json
 import subprocess
-
+import time
 
 class ServerEnv(gym.Env):
+
+    
 
     def __init__(self, serverIP='127.0.0.1', serverPort='8000', 
                  exeCmd=None, action_space=None, observation_space=None, proc_mode='process',
                  window_render=False, env_fps=60, renderPath='./render_frames/'):
+        self.tick_time = time.time()
+        self.server_steps = 0
+        
         # Server url
         self.serverIP = serverIP
         self.serverPort = serverPort
@@ -84,6 +89,7 @@ class ServerEnv(gym.Env):
 
     def reset(self):    
         # Send reset msg and return initial observation
+        #print(f'Resetting: {self.serverPort}')
         answer = self._sendAndGetAnswer({'cmd': 'reset'})
         return np.array(answer['init_observation']).astype(np.float32)
 
@@ -94,6 +100,12 @@ class ServerEnv(gym.Env):
         answer = self._sendAndGetAnswer(
             {'cmd': 'step', 'action': action.tolist()})
         observation_np = np.array(answer['observation']).astype(np.float32)
+        self.server_steps+=1
+        if(self.server_steps%1000 == 0):
+            print(f'step_count_from_server: {self.server_steps/1000}K\t tick_diff: {time.time()-self.tick_time}')
+            self.tick_time = time.time()    
+
+        #print(('A',answer['reward'],'D', answer['done']))
         return observation_np, answer['reward'], answer['done'], {}
 
     def close(self):

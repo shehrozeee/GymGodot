@@ -57,7 +57,7 @@ else:
         os.remove(file.path)
 
 # Max episode length
-max_episode_steps = 100
+max_episode_steps = 450
 
 # Create vectorized env
 def make_env_fn(i, max_episode_steps=max_episode_steps):
@@ -75,30 +75,30 @@ def make_env_fn(i, max_episode_steps=max_episode_steps):
 
 nb_envs = 4
 if __name__ == '__main__':
-    vec_envs = SubprocVecEnv([make_env_fn(i) for i in range(nb_envs)],
-                         start_method='spawn')
+    # vec_envs = SubprocVecEnv([make_env_fn(i) for i in range(nb_envs)],
+    #                      start_method='spawn')
     
-    # Custom actor (pi) and value function (vf) networks
-    policy_kwargs = dict(activation_fn=th.nn.ReLU,
-                         net_arch=[dict(pi=[16, 16], vf=[16, 16])])
+    # # Custom actor (pi) and value function (vf) networks
+    # policy_kwargs = dict(activation_fn=th.nn.ReLU,
+    #                      net_arch=[dict(pi=[16, 16], vf=[16, 16])])
     
-    # Train
-    model = PPO('MlpPolicy', vec_envs, verbose=0,  learning_rate=0.002,
-                tensorboard_log='./tensorboard_logs/', policy_kwargs=policy_kwargs,
-                device='cuda', seed=0)
-    model.learn(total_timesteps=3e6)
-    vec_envs.close()
+    # # Train
+    # model = PPO('MlpPolicy', vec_envs, verbose=0,  learning_rate=0.002,
+    #             tensorboard_log='./tensorboard_logs/', policy_kwargs=policy_kwargs,
+    #             device='cuda', seed=0)
+    # model.learn(total_timesteps=5e5)
+    # vec_envs.close()
     
-    # Save model
-    model.save('mars_lander_model')
-    model = PPO.load('mars_lander_model.zip', device='cuda')
+    # # Save model
+    # model.save('mars_lander_model')
+    #model = PPO.load('mars_lander_model.zip', device='cuda')
     
-    # onnx_path = "my_ppo_model.onnx"
-    # onnx_model = onnx.load(onnx_path)
-    # onnx.checker.check_model(onnx_model)
+    onnx_path = "my_ppo_1_model.onnx"
+    onnx_model = onnx.load(onnx_path)
+    onnx.checker.check_model(onnx_model)
 
-    # observation = np.zeros((10)).astype(np.float32)
-    # ort_sess = ort.InferenceSession(onnx_path)
+    observation = np.zeros((10)).astype(np.float32)
+    ort_sess = ort.InferenceSession(onnx_path)
     
     # dummy_input = vec_envs
     # state_dict = torch.load('mars_lander_model')
@@ -115,18 +115,18 @@ if __name__ == '__main__':
     env = (make_env_fn(1))()
     obs = env.reset()
     for i in range(max_episode_steps):
-        action1, _states = model.predict(obs)
-        # action, _states = ort_sess.run(None, {'input.1': obs})
+        #action1, _states = model.predict(obs)
+        action, _states = ort_sess.run(None, {'input.1': obs})
         
-        # action_to_take = 0
-        # for i_ in range(6):
-        #     if action[i_] ==  action.max():
-        #         action_to_take = i_
-        #         break;    
-        # if( i%2 == 0):
-        #     obs, rewards, done, info = env.step(action_to_take)
-        # else:
-        obs, rewards, done, info = env.step(action1)
+        action_to_take = 0
+        for i_ in range(6):
+            if action[i_] ==  action.max():
+                action_to_take = i_
+                break;    
+        #if( i%2 == 0):
+        obs, rewards, done, info = env.step(action_to_take)
+        #else:
+        #    obs, rewards, done, info = env.step(action1)
         #print((action1,action_to_take))
         env.render()
         if done:
@@ -137,6 +137,6 @@ if __name__ == '__main__':
     #os.system('cd {} && ffmpeg -hide_banner -loglevel error -framerate 30 -y -i %01d.png -vcodec libvpx -b 2000k video.webm'.format(renderPath))
     
     # Remove frames
-    for item in os.listdir(renderPath):
-        if item.endswith('.png'):
-            os.remove(os.path.join(renderPath, item))
+    #for item in os.listdir(renderPath):
+    #    if item.endswith('.png'):
+    #        os.remove(os.path.join(renderPath, item))
